@@ -5,7 +5,7 @@ const room = require('./schemas/room.model');
 
 mongoose.Promise = global.Promise;
 
-module.exports = async function ({ conn, mongoUrl = 'mongodb+srv://stream:hD7e31yqRrkQMlR0@feiradigital.wqkom.mongodb.net/feiradigital?retryWrites=true&w=majority' }) {
+module.exports = async function ({ conn, mongoUrl = 'mongodb+srv://stream:jTKBFXzkQvheO743@feiradigital.wqkom.mongodb.net/feiradigital?retryWrites=true&w=majority' }) {
   console.log('mongoUrl: ', mongoUrl);
   console.log('mongodb+srv://stream:jTKBFXzkQvheO743@feiradigital.wqkom.mongodb.net/feiradigital?retryWrites=true&w=majority');
   try {
