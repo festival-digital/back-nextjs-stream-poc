@@ -1,10 +1,9 @@
-import express from 'express';
+const express = require('express');
 // import fs from 'fs';
-import http from 'http'
-import socket from 'socket.io'
-// import path from 'path';
-import Mongodb from './db/Mongodb';
-import { enterRoom, receiveAudio } from './src/stream.functions';
+const http = require('http')
+const socket = require('socket.io');
+// const path = require('path');
+const Mongodb = require('./db/Mongodb');
 
 const app = express();
 const server = http.Server(app);
@@ -17,30 +16,50 @@ app.get('/', (req, res) => {
   res.send(200);
 });
 
-// app.get('/audio', async (req, res) => {
-//   // console.log("io", io.sockets)
-//   // Object.keys(io.engine.clients);
-//   console.log("Object.keys(io.engine.clients)", Object.keys(io.engine.clients))
-//   const filePath = 'tmp/'+path.basename('user#'+Object.keys(io.engine.clients)[0]+'-stream.wav');
-//     const stat = await getStat(filePath);
-//     console.log(stat);    
+const enterRoom = async ({ room_id, name, type }, { socket, io, db, person }) => {
+  // console.log('enterRoom -> type', );
+  // join room
+  socket.join(room_id);
+  
+  // Update client
+  const client = await db.model('watcher').findOneAndUpdate({ _id: person._id }, { name });
 
-//     // informações sobre o tipo do conteúdo e o tamanho do arquivo
-//     res.writeHead(200, {
-//         'Content-Type': 'audio/wav',
-//         'Content-Length': stat.size
-//     });
+  // Find room in our DB
+  let room = await db.model('room').findOne({ room_id, type }).populate('participants');
+  // console.log('enterRoom -> room', room);
 
-//     const stream = fs.createReadStream(filePath);
+  // Update or create room
+  if (!room) {
+    room = await db.model('room').create({ room_id, participants: [person._id], type }).then(o => o
+      .populate('participants')
+      .execPopulate())
+    .catch((err) => {
+      throw new Error(err);
+    });
+    // console.log('enterRoom - create -> room ', room);
+  } else {
+    room = await db.model('room').findOneAndUpdate({ room_id, type }, { $push: { participants: person._id }}, { new: true }).populate('participants');
+    // console.log('enterRoom - update -> room', room);
+  }
 
-//     // só exibe quando terminar de enviar tudo
-//     stream.on('end', () => console.log('acabou'));
+  console.log("---in---   " + room_id);
 
-//     // faz streaming do audio 
-//     stream.pipe(res);
-//   res.send(200);
-// });
+  // Emit update participants to all clients in room
+  if (type === 'peer') {
+    console.log('\n\n peer\n\n');
+    socket.emit('participants', room);
+  }
+  if (type === 'voice') {
+    io.to(room_id).emit('participants', client);
+    console.log('\n\n voice\n\n');
+  }
+}
 
+const receiveAudio = ({ room_id, blob, streamer_id }, { io }) => {
+  if (!room_id) return;
+  console.log("------a");
+  io.to(room_id).emit('voice', { id: streamer_id, data: blob });
+}
 
 io.on('connection', async (socket) => {
   const db = await Mongodb({});
