@@ -99,7 +99,7 @@ app.get('/', (req, res) => {
 
 console.log('clients:', clients)
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   const db = await mongodb({});
   console.log(' => connect', socket.id);
   const person = await db.model('watcher').create({ socket_id: socket.id });
