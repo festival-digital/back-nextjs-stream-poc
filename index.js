@@ -6,7 +6,7 @@ const io = require('socket.io')(server);
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Schema.Types;
 
-const personModel = new Schema({
+const personModel = new mongoose.Schema({
   socket_id: { type: String, required: true },
   name: { type: String },
 }, {
@@ -14,7 +14,7 @@ const personModel = new Schema({
   timestamps: { updatedAt: 'updated_at', createdAt: 'created_at' },
 });
 
-const roomModel = new Schema({
+const roomModel = new mongoose.Schema({
   room_id: { type: String },
   type: { type: String },
   participants: [{ type: ObjectId, ref: 'watcher' }],
