@@ -4,6 +4,7 @@ const server = require('http').Server(app);
 const path = require('path');
 const io = require('socket.io')(server);
 const { Schema } = require('mongoose');
+const { ObjectId } = Schema.Types;
 
 const personModel = new Schema({
   socket_id: { type: String, required: true },
