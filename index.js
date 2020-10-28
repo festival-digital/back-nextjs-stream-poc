@@ -2,9 +2,16 @@ const express = require('express');
 const app = express()
 const server = require('http').Server(app);
 const path = require('path');
+const cors = require('cors');
 const io = require('socket.io')(server);
+
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Schema.Types;
+const bodyParser = require('body-parser')
+
+app.use(cors())
+app.use(bodyParser.json({ type: 'application/json' }));
+
 
 const personModel = new mongoose.Schema({
   socket_id: { type: String, required: true },
@@ -83,6 +90,8 @@ const enterRoom = async ({ room_id, name, type }, { socket, io, db, person }) =>
     io.to(room_id).emit('participants', client);
     console.log('\n\n voice\n\n');
   }
+  const rooms = await db.model('room').find({}).populate('participants');
+  io.emit('updated_rooms', rooms);
 }
 
 const receiveAudio = ({ room_id, blob, streamer_id }, { io }) => {
@@ -95,6 +104,16 @@ let clients = [];
 
 app.get('/', (req, res) => {
   res.send(200);
+});
+
+app.get('/get-rooms', async (req, res) => {
+  const db = await mongodb({});
+  const rooms = await db.model('room').find({}).populate('participants');
+  console.log('rooms', rooms);
+  res.type('application/json');
+  res.status(404).send(JSON.stringify({
+    rooms: rooms || [],
+  }));
 });
 
 console.log('clients:', clients)
@@ -125,6 +144,8 @@ io.on('connection', async (socket) => {
     await db.model('watcher').deleteOne({ socket_id: person._id });
     console.log("leftFrom", leftFrom)
     io.to(leftFrom.room_id).emit('participants', leftFrom);
+    const rooms = await db.model('room').find({}).populate('participants');
+    io.emit('updated_rooms', rooms);
   });
 });
 
